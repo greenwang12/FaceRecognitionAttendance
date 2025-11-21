@@ -1,13 +1,97 @@
-venv/
-__pycache__/
-*.pyc
-.env
-.DS_Store
+# -------------------------
+# Python / FastAPI
+# -------------------------
 
-# Node / build
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Environment variables
+.env
+.env.*
+*.env.local
+
+# Python packaging
+*.egg-info/
+dist/
+build/
+
+# Logs
+*.log
+
+# SQLite (if accidentally generated)
+*.sqlite3
+
+# Migrations cache (if using Alembic)
+alembic/__pycache__/
+alembic/versions/__pycache__/
+
+# Testing
+.pytest_cache/
+coverage/
+
+# mypy
+.mypy_cache/
+
+
+# -------------------------
+# Node / React
+# -------------------------
+
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output
+/build/
 dist/
 
-# Large binaries (recommended)
+# React environment files
+*.env.development.local
+*.env.test.local
+*.env.production.local
+*.env.local
+
+
+# -------------------------
+# MySQL
+# -------------------------
+
+# MySQL dump files
+*.sql
+*.sql.gz
+*.mysql
+
+# Local database directories (Docker volumes, etc.)
+mysql_data/
+db_data/
+
+
+# -------------------------
+# OS / Editor junk
+# -------------------------
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+
+# -------------------------
+# Other binaries
+# -------------------------
+
 *.dll
 *.pyd
