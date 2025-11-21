@@ -1,7 +1,13 @@
-/venv
-/node_modules
-/dist
-.env
+venv/
 __pycache__/
 *.pyc
+.env
 .DS_Store
+
+# Node / build
+node_modules/
+dist/
+
+# Large binaries (recommended)
+*.dll
+*.pyd
