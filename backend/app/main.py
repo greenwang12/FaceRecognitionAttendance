@@ -1,8 +1,24 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
-from app.api.v1 import students, attendance, attendance_logs, continuous   # <-- ADD THIS
+from fastapi.middleware.cors import CORSMiddleware
+from app.api.v1 import students, attendance, attendance_logs, continuous
+from app.api.v1 import dashboard
+
+import asyncio
+import traceback
 
 app = FastAPI(title="Attendance API")
+
+
+# ---------------------------
+# CORS (quick dev-friendly)
+# ---------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ---------------------------
 # INCLUDE ROUTERS
@@ -10,20 +26,42 @@ app = FastAPI(title="Attendance API")
 app.include_router(students.router)
 app.include_router(attendance.router)
 app.include_router(attendance_logs.router)
-app.include_router(continuous.router)     # <-- NEW ROUTER FOR CONTINUOUS CAMERA EVENTS
+app.include_router(continuous.router)     # continuous camera events
+app.include_router(dashboard.router)
 
+# background task handle
+_sweeper_task: asyncio.Task | None = None
 
 # ---------------------------
 # START CONTINUOUS SWEEPER
 # ---------------------------
 @app.on_event("startup")
 async def startup_event():
-    # start background attendance sweeper
     try:
+        # start_sweeper is idempotent and will attach to the running loop
         continuous.start_sweeper()
-    except Exception:
-        pass
+    except Exception as e:
+        print("sweeper start failed:", e)
+        import traceback; traceback.print_exc()
 
+# ---------------------------
+# STOP CONTINUOUS SWEEPER
+# ---------------------------
+@app.on_event("shutdown")
+async def shutdown_event():
+    global _sweeper_task
+    try:
+        if _sweeper_task:
+            _sweeper_task.cancel()
+            # give a tick to propagate cancellation
+            try:
+                await _sweeper_task
+            except asyncio.CancelledError:
+                pass
+            _sweeper_task = None
+    except Exception as e:
+        print("sweeper stop failed:", e)
+        traceback.print_exc()
 
 # ---------------------------
 # HEALTH CHECK
@@ -31,7 +69,6 @@ async def startup_event():
 @app.get("/health")
 async def health():
     return {"status": "ok"}
-
 
 # ---------------------------
 # CLICKABLE HOME PAGE

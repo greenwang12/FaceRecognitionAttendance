@@ -1,17 +1,17 @@
 # backend/app/api/v1/attendance_logs.py
+# Updated: added browser-friendly GET for mark-in/mark-out and fixed duplicate operation IDs
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
-from datetime import datetime, timezone
+from datetime import datetime
 
 from app.db.session import get_db
 from app.db import models
 
 router = APIRouter(prefix="/api/v1/attendance", tags=["attendance"])
-
 
 # ---------------------------
 # OUTPUT MODEL FOR /logs
@@ -55,12 +55,32 @@ class MarkInResp(BaseModel):
 
 
 # ---------------------------
+# BROWSER-FRIENDLY GET ENDPOINTS (Fix 405)
+# ---------------------------
+@router.get("/mark-in", include_in_schema=False)
+def mark_in_info():
+    return {
+        "use": "POST",
+        "endpoint": "/api/v1/attendance/mark-in",
+        "note": "This endpoint only accepts POST."
+    }
+
+
+@router.get("/mark-out", include_in_schema=False)
+def mark_out_info():
+    return {
+        "use": "POST",
+        "endpoint": "/api/v1/attendance/mark-out",
+        "note": "This endpoint only accepts POST."
+    }
+
+
+# ---------------------------
 # MARK-IN ENDPOINT
 # ---------------------------
-@router.post("/mark-in", response_model=MarkInResp, status_code=status.HTTP_201_CREATED)
+@router.post("/mark-in", response_model=MarkInResp, status_code=status.HTTP_201_CREATED, operation_id="attendance_mark_in")
 async def mark_in(payload: MarkInReq, db: AsyncSession = Depends(get_db)):
 
-    # 1) Verify student exists
     stmt = select(models.Student).where(models.Student.id == payload.student_id)
     res = await db.execute(stmt)
     student = res.scalars().first()
@@ -68,7 +88,6 @@ async def mark_in(payload: MarkInReq, db: AsyncSession = Depends(get_db)):
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    # 2) Prevent duplicate open logs (same day, no exit yet)
     now = datetime.utcnow()
     today_start = datetime(now.year, now.month, now.day)
 
@@ -83,14 +102,13 @@ async def mark_in(payload: MarkInReq, db: AsyncSession = Depends(get_db)):
         return {
             "id": existing.id,
             "student_id": student.id,
-            "student_roll": getattr(student, "roll", ""),
-            "student_name": getattr(student, "name", ""),
+            "student_roll": student.roll,
+            "student_name": student.name,
             "subject": existing.subject,
             "class_date": existing.class_date,
             "entry_time": existing.entry_time
         }
 
-    # 3) Create new AttendanceLog
     entry_ts = datetime.utcnow()
 
     new_log = models.AttendanceLog(
@@ -110,8 +128,8 @@ async def mark_in(payload: MarkInReq, db: AsyncSession = Depends(get_db)):
     return {
         "id": new_log.id,
         "student_id": student.id,
-        "student_roll": getattr(student, "roll", ""),
-        "student_name": getattr(student, "name", ""),
+        "student_roll": student.roll,
+        "student_name": student.name,
         "subject": new_log.subject,
         "class_date": new_log.class_date,
         "entry_time": new_log.entry_time
@@ -125,10 +143,9 @@ class MarkOutReq(BaseModel):
     student_id: int
 
 
-@router.post("/mark-out")
+@router.post("/mark-out", operation_id="attendance_mark_out")
 async def mark_out(payload: MarkOutReq, db: AsyncSession = Depends(get_db)):
 
-    # 1) Find open log
     stmt = select(models.AttendanceLog).where(
         (models.AttendanceLog.student_id == payload.student_id) &
         (models.AttendanceLog.exit_time == None)
@@ -139,13 +156,12 @@ async def mark_out(payload: MarkOutReq, db: AsyncSession = Depends(get_db)):
     if not log:
         raise HTTPException(status_code=404, detail="No active session found")
 
-    # 2) Update exit_time and compute presence
     exit_ts = datetime.utcnow()
     duration_seconds = (exit_ts - log.entry_time).total_seconds()
-    presence_score = round(duration_seconds / 3600, 2)  # example: convert to hours
+    presence_score = round(duration_seconds / 3600, 2)
 
     log.exit_time = exit_ts
-    log.present = duration_seconds >= 300  # present if stayed >= 5 minutes
+    log.present = duration_seconds >= 300
     log.presence_score = presence_score
 
     await db.commit()

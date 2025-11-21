@@ -1,0 +1,66 @@
+:root{
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --muted: #8a929b;
+  --accent: #2f80ed;
+  --accent-2: #6c63ff;
+  --shadow: 0 8px 28px rgba(12,15,20,0.06);
+  --radius: 12px;
+  --pad: 18px;
+  --maxw: 1100px;
+  --sidebar-w: 260px;
+  --font-sans: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+*{box-sizing:border-box}
+html,body,#root{height:100%}
+body{
+  margin:0;
+  font-family:var(--font-sans);
+  background: linear-gradient(180deg,var(--bg), #f3f4f8);
+  color:#111827;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  padding:28px;
+}
+
+/* App layout */
+.app-wrap{display:flex;gap:24px;max-width:calc(var(--maxw) + var(--sidebar-w));margin:0 auto;align-items:flex-start;}
+.app-aside{
+  width:var(--sidebar-w);
+  background:transparent;
+  padding:18px 12px;
+  position:sticky;
+  top:28px;
+  height:calc(100vh - 56px);
+}
+.brand{font-weight:800;font-size:28px;margin:6px 12px;color:#0f1724;letter-spacing:-0.5px}
+.nav a{display:block;padding:12px 14px;border-radius:10px;color:#1f2937;text-decoration:none;margin:6px 0;font-weight:500}
+.nav a.active, .nav a:hover{background:linear-gradient(90deg, rgba(47,128,237,0.08), rgba(108,99,255,0.06));color:var(--accent)}
+.main-area{flex:1;padding:6px 0 40px;min-height:80vh}
+
+/* page container */
+.page{max-width:var(--maxw);margin:0 auto;padding:6px 24px}
+
+/* cards */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:var(--pad);margin:12px 0;border:1px solid rgba(15,23,42,0.04)}
+.card-muted{background:transparent;border:1px dashed rgba(15,23,42,0.04);color:var(--muted)}
+
+/* small elements */
+.kv{font-size:13px;color:var(--muted)}
+.h1{font-size:42px;font-weight:800;margin:6px 0 6px}
+.h2{font-size:20px;font-weight:700;margin:4px 0 10px}
+
+/* list styles */
+.list{display:flex;flex-direction:column;gap:12px}
+.log{display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:10px;background:#fff;border:1px solid rgba(15,23,42,0.03)}
+.log-name{font-weight:700}
+.log-time{font-size:13px;color:var(--muted)}
+
+/* responsive */
+@media (max-width:900px){
+  .app-wrap{flex-direction:column;padding:0}
+  .app-aside{position:relative;width:auto;height:auto;padding:8px 0}
+  .main-area{padding:0}
+  .page{padding:12px}
+}
